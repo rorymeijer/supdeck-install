@@ -2,7 +2,7 @@
 
 Automatische installatie van **Supdeck** op zowel **Proxmox LXC** als **Docker**.
 
-De installatiescripts downloaden automatisch de laatste versie van Supdeck vanuit GitHub, richten de database in (schema + voorbeelddata) en begeleiden je bij het configureren van een externe MySQL/MariaDB-database.
+De installatiescripts downloaden automatisch de laatste versie van Supdeck vanuit GitHub en begeleiden je bij het configureren van een externe MySQL/MariaDB-database.
 
 > **Let op:** De Supdeck-repository is momenteel privé. Tijdens de installatie wordt gevraagd om een GitHub-gebruikersnaam en een Personal Access Token (PAT) met leesrechten op de repository.
 
@@ -56,11 +56,8 @@ Tijdens beide installaties wordt gevraagd om:
 
 * GitHub gebruikersnaam
 * GitHub Personal Access Token
-* MySQL-host
-* MySQL-poort
-* Databasenaam
-* Databasegebruiker
-* Databasewachtwoord
+
+De MySQL-gegevens (host, database, gebruiker, wachtwoord) vul je daarna in de webinstaller in.
 
 ---
 
@@ -74,12 +71,11 @@ Het script:
 * installeert Apache;
 * installeert PHP en alle benodigde extensies;
 * downloadt Supdeck vanuit GitHub;
-* genereert `config/config.php` met de opgegeven databasegegevens;
-* laadt het databaseschema en de voorbeelddata (incl. demo-accounts);
 * configureert Apache;
 * stelt de juiste bestandsrechten in;
 * start Apache;
-* stelt cron in voor de achtergrondtaak (e-mailnotificaties).
+* stelt cron in voor de achtergrondtaak (e-mailnotificaties);
+* maakt Supdeck gereed voor de webinstaller.
 
 ---
 
@@ -89,13 +85,12 @@ Het script:
 
 * installeert Docker (indien nodig);
 * downloadt Supdeck vanuit GitHub;
-* genereert `config/config.php` met de opgegeven databasegegevens;
-* laadt het databaseschema en de voorbeelddata (incl. demo-accounts);
 * bouwt automatisch de Docker-image;
 * maakt een Docker Compose-configuratie aan;
 * start de container;
-* koppelt configuratie-, opslag- en uploadmappen als volumes;
-* stelt cron op de host in voor de achtergrondtaak (e-mailnotificaties).
+* koppelt configuratie- en opslagmappen als volumes;
+* stelt cron op de host in voor de achtergrondtaak (e-mailnotificaties);
+* maakt Supdeck gereed voor de webinstaller.
 
 ---
 
@@ -103,11 +98,11 @@ Het script:
 
 Beide installers stellen automatisch cron in voor de Supdeck-achtergrondtaak:
 
-* **process-outbox** – verwerkt de events-outbox en verstuurt e-mailmeldingen (elke minuut).
+* **process-outbox** – verwerkt de events-outbox en verstuurt e-mailnotificaties (elke minuut).
 
 Op **Proxmox** draait cron in de container als `www-data`; op **Docker** draait cron op de host en voert de taak via `docker exec` in de container uit. De cron-configuratie staat in `/etc/cron.d/supdeck`.
 
-> **Let op:** het e-mailtransport staat standaard op `log` (berichten worden als `.eml` in `storage/app/mail/` weggeschreven, er wordt niets verzonden). Zet in `config/config.php` het `mail.transport` op `smtp` met de juiste host/gebruiker/wachtwoord om echt te versturen.
+> **Let op:** e-mail moet in de app aan staan (Beheer → Instellingen), anders doet de taak niets.
 
 ---
 
@@ -115,7 +110,7 @@ Op **Proxmox** draait cron in de container als `www-data`; op **Docker** draait 
 
 Supdeck installeert **geen lokale database**.
 
-Er wordt altijd gebruikgemaakt van een bestaande externe MySQL- of MariaDB-server. Het installatiescript laadt bij een lege database automatisch het schema (`database/sql/schema.sql`) en de voorbeelddata (`database/sql/seed.sql`). Bevat de database al tabellen, dan worden schema en voorbeelddata **niet** opnieuw geladen.
+Er wordt altijd gebruikgemaakt van een bestaande externe MySQL- of MariaDB-server.
 
 ---
 
@@ -126,25 +121,16 @@ Open in de browser:
 ## Proxmox
 
 ```text
-http://<container-ip>/
+http://<container-ip>/install/
 ```
 
 ## Docker
 
 ```text
-http://<server-ip>:8100/
+http://<server-ip>:8181/install/
 ```
 
-Log in met een demo-account (wachtwoord `Welkom2026!`):
-
-| E-mail | Rol |
-| ------------------------- | ---------------------------- |
-| `coordinator@demo.nl`     | Coördinator + Behandelaar    |
-| `agent@demo.nl`           | Behandelaar                  |
-| `melder@demo.nl`          | Melder (self-service portaal)|
-| `beheer@demo.nl`          | Beheerder                    |
-
-> **Tip:** verander na de eerste keer inloggen de wachtwoorden van de demo-accounts (of verwijder de accounts die je niet nodig hebt) voordat je Supdeck in productie gebruikt.
+Volg vervolgens de webinstaller en vul de gegevens van de externe database in.
 
 ---
 
@@ -158,7 +144,7 @@ Updates kunnen worden uitgevoerd met het meegeleverde commando:
 pct exec <ctid> -- update-supdeck
 ```
 
-Of handmatig via Git in de container:
+Of handmatig via Git:
 
 ```bash
 cd /var/www/supdeck
@@ -169,10 +155,10 @@ systemctl reload apache2
 
 ## Docker
 
-Wanneer de Supdeck-map als volume is gekoppeld, kunnen updates handmatig worden uitgevoerd:
+Wanneer de Supdeck-map als volume is gekoppeld, kunnen updates eveneens vanuit de applicatie of handmatig worden uitgevoerd:
 
 ```bash
-cd /srv/docker/supdeck/app
+cd /var/www/html
 git fetch origin
 git reset --hard origin/main
 ```
@@ -205,7 +191,7 @@ Minimale rechten:
 | Apache 2.4                |    ✅    |    ✅   |
 | PHP 8.3+                  |    ✅    |    ✅   |
 | Externe MySQL/MariaDB     |    ✅    |    ✅   |
-| Automatisch schema + seed |    ✅    |    ✅   |
+| Webinstaller              |    ✅    |    ✅   |
 | GitHub Private Repository |    ✅    |    ✅   |
 
 ---
