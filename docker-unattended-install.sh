@@ -5,7 +5,7 @@ APP_NAME="supdeck"
 APP_DIR="/srv/docker/supdeck"
 REPO="rorymeijer/Supdeck"
 BRANCH="main"
-PORT="8181"
+BASE_PORT="8181"
 
 echo "GitHub authenticatie voor private repo:"
 read -r -p "GitHub username: " GITHUB_USER
@@ -16,11 +16,30 @@ echo
 # (http://<server-ip>:PORT/install/) ingevoerd, dus hier niet meer vragen.
 
 apt update
-apt install -y git curl ca-certificates
+apt install -y git curl ca-certificates iproute2
 
 if ! command -v docker >/dev/null 2>&1; then
   curl -fsSL https://get.docker.com | sh
 fi
+
+# Zoek een vrije host-poort vanaf BASE_PORT (8181, anders 8182, 8183, ...).
+port_in_use() {
+  local p="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltnH "sport = :$p" 2>/dev/null | grep -q .
+  elif command -v netstat >/dev/null 2>&1; then
+    netstat -ltn 2>/dev/null | awk '{print $4}' | grep -qE "[:.]$p\$"
+  else
+    (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null && { exec 3>&-; exec 3<&-; return 0; } || return 1
+  fi
+}
+
+PORT="$BASE_PORT"
+while port_in_use "$PORT"; do
+  echo "Poort $PORT is al in gebruik; probeer $((PORT + 1))..."
+  PORT=$((PORT + 1))
+done
+echo "Supdeck gebruikt host-poort $PORT."
 
 mkdir -p "$APP_DIR"
 cd "$APP_DIR"
