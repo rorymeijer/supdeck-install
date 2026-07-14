@@ -130,6 +130,8 @@ http://<container-ip>/install/
 http://<server-ip>:8181/install/
 ```
 
+> De Docker-installer gebruikt standaard host-poort **8181**. Is die al bezet, dan wordt automatisch de eerstvolgende vrije poort gekozen (8182, 8183, …). De uiteindelijk gekozen poort wordt aan het einde van de installatie getoond.
+
 Volg vervolgens de webinstaller en vul de gegevens van de externe database in.
 
 ---
